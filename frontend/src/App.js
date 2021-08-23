@@ -1,39 +1,61 @@
-import logo from './logo.svg';
+import React, {Component} from 'react';
 import './App.css';
-import React, { useEffect, useState } from 'react';
-import axios from 'axios'
+import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
+import TextField from 'material-ui/TextField';
+import RaisedButton from 'material-ui/RaisedButton';
+import Paper from 'material-ui/Paper';
+import Polarity from "./components/Polarity";
 
-function App() {
-  const [getMessage, setGetMessage] = useState({})
+const style = {
+    marginLeft: 12,
+};
 
-  useEffect(()=>{
-    axios.get('https://react-flask-tutorial.herokuapp.com/flask/hello').then(response => {
-      console.log("SUCCESS", response)
-      setGetMessage(response)
-    }).catch(error => {
-      console.log(error)
-    })
+class App extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            sentence: '',
+            polarity: undefined
+        };
+    };
 
-    // axios.get('http://localhost:5000/flask/hello').then(response => {
-    //   console.log("SUCCESS", response)
-    //   setGetMessage(response)
-    // }).catch(error => {
-    //   console.log(error)
-    // })
+    analyzeSentence() {
+        fetch('http://localhost:8080/sentiment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({sentence: this.textField.getValue()})
+        })
+            .then(response => response.json())
+            .then(data => this.setState(data));
+    }
 
-  }, [])
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>React + Flask Tutorial</p>
-        <div>{getMessage.status === 200 ? 
-          <h3>{getMessage.data.message}</h3>
-          :
-          <h3>LOADING</h3>}</div>
-      </header>
-    </div>
-  );
+    onEnterPress = e => {
+        if (e.key === 'Enter') {
+            this.analyzeSentence();
+        }
+    };
+
+    render() {
+        const polarityComponent = this.state.polarity !== undefined ?
+            <Polarity sentence={this.state.sentence} polarity={this.state.polarity}/> :
+            null;
+
+        return (
+            <MuiThemeProvider>
+                <div className="centerize">
+                    <Paper zDepth={1} className="content">
+                        <h2>Sentiment Analyser</h2>
+                        <TextField ref={ref => this.textField = ref} onKeyUp={this.onEnterPress.bind(this)}
+                                   hintText="Type your sentence."/>
+                        <RaisedButton  label="Send" style={style} onClick={this.analyzeSentence.bind(this)}/>
+                        {polarityComponent}
+                    </Paper>
+                </div>
+            </MuiThemeProvider>
+        );
+    }
 }
 
 export default App;
